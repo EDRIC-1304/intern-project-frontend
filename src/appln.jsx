@@ -156,21 +156,45 @@ function Appln() {
   const [provider, setProvider] = useState(defaultProvider);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    try {
-      const savedWalletJSON = localStorage.getItem('react-wallet-data');
-      const savedPassword = localStorage.getItem('react-wallet-password');
-      if (savedWalletJSON && savedPassword) {
-        const savedWallet = JSON.parse(savedWalletJSON);
-        setWallet(savedWallet);
-        setPassword(savedPassword);
-      }
-    } catch (e) {
-      // If parsing fails, clear the bad data
-      localStorage.clear();
-    }
-    setIsLoading(false);
-  }, []);
+    useEffect(() => {
+    const loadSession = async () => {
+        // We set loading true at the start of the check
+        setIsLoading(true); 
+        try {
+            const savedWalletJSON = localStorage.getItem('react-wallet-data');
+            const savedPassword = localStorage.getItem('react-wallet-password');
+
+            if (savedWalletJSON && savedPassword) {
+                const savedData = JSON.parse(savedWalletJSON);
+                
+                // This is the secure way to restore the session.
+                // We re-create the full wallet object from the encrypted data and password.
+                // This re-created wallet will contain the mnemonic phrase in memory.
+                const rehydratedWallet = await ethers.Wallet.fromEncryptedJson(savedData.encryptedJson, savedPassword);
+
+                // Now we combine the full, rehydrated wallet with the name we saved.
+                const fullWalletData = {
+                    ...rehydratedWallet,
+                    name: savedData.name,
+                    encryptedJson: savedData.encryptedJson
+                };
+                
+                setWallet(fullWalletData);
+                setPassword(savedPassword);
+            }
+        } catch (e) {
+            // If anything goes wrong (e.g., bad password, corrupted data),
+            // clear the storage to be safe.
+            localStorage.clear();
+            setWallet(null);
+            setPassword('');
+        }
+        // We set loading false at the very end, after the session is loaded or fails.
+        setIsLoading(false);
+    };
+
+    loadSession();
+  }, []); // The empty array [] ensures this runs only once when the app first loads.
 
   const showPopup = (msg) => {
     setPopup(msg);
@@ -309,10 +333,19 @@ function Appln() {
     showPopup("✅ Logged out successfully!");
   };
 
-  const onLogin = (loggedInWallet, loggedInPassword) => {
+    const onLogin = (loggedInWallet, loggedInPassword) => {
     setWallet(loggedInWallet);
     setPassword(loggedInPassword);
-    localStorage.setItem('react-wallet-data', JSON.stringify(loggedInWallet));
+
+    // Create a new, "safe" object to store.
+    // This explicitly excludes the mnemonic and private key.
+    const walletToSave = {
+        name: loggedInWallet.name,
+        address: loggedInWallet.address,
+        encryptedJson: loggedInWallet.encryptedJson // The only piece of wallet data that should be stored.
+    };
+
+    localStorage.setItem('react-wallet-data', JSON.stringify(walletToSave));
     localStorage.setItem('react-wallet-password', loggedInPassword);
   };
 
