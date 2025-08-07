@@ -7,7 +7,7 @@ import QRCode from 'react-qr-code';
 import './appln.css'; // Using the new CSS file
 
 // --- Constants ---
-const BACKEND_URL = 'https://wallet-backend-lzzw.onrender.com';
+const BACKEND_URL = 'https://wallet-backend-g6nz.onrender.com';
 const USDT_CONTRACT_ADDRESS = '0x787A697324dbA4AB965C58CD33c13ff5eeA6295F';
 const USDC_CONTRACT_ADDRESS = '0x342e3aA1248AB77E319e3331C6fD3f1F2d4B36B1';
 const ABI = ["function balanceOf(address) view returns (uint256)", "function transfer(address to, uint amount) returns (bool)"];
